@@ -37,7 +37,7 @@ public class UserProductController {
 				new UserProduct(3, 1, 3),
 				new UserProduct(3, 2, 5));
 		
-		User user = restTemplate.getForObject("http://localhost:8206/users/" + userId, User.class);
+		User user = restTemplate.getForObject("http://micro-user/users/" + userId, User.class);
 		if (user == null)
 			return null;
 		
@@ -46,7 +46,7 @@ public class UserProductController {
                 .map(up -> {
                 	Product product = 
                 			restTemplate.getForObject(
-                					"http://localhost:8207/products/" + up.getProductId(), Product.class);
+                					"http://micro-product/products/" + up.getProductId(), Product.class);
                 	return new ProductData(product, up.getQuantity()); 
                 })
                 .collect(Collectors.toList());
