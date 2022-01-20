@@ -11,11 +11,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
-import ot.microservice.microuserproduct.data.Product;
 import ot.microservice.microuserproduct.data.ProductData;
 import ot.microservice.microuserproduct.data.User;
 import ot.microservice.microuserproduct.data.UserProductData;
 import ot.microservice.microuserproduct.entity.UserProduct;
+import ot.microservice.microuserproduct.service.ProductDataService;
+import ot.microservice.microuserproduct.service.UserService;
 
 @RestController
 @RequestMapping("/userproducts")
@@ -24,7 +25,14 @@ public class UserProductController {
 	@Autowired
     private RestTemplate restTemplate;
 	
+	@Autowired
+	private UserService userService;
+	
+	@Autowired
+	private ProductDataService productDataService;
+	
 	@GetMapping("/users/{userId}")
+//	@HystrixCommand(fallbackMethod = "getFallbackUserProducts")
 	public UserProductData getUserProducts(@PathVariable("userId") Integer userId) {
 		
 		List<UserProduct> userProductsTable = Arrays.asList(
@@ -37,21 +45,23 @@ public class UserProductController {
 				new UserProduct(3, 1, 3),
 				new UserProduct(3, 2, 5));
 		
-		User user = restTemplate.getForObject("http://micro-user/users/" + userId, User.class);
+		User user = userService.getUser(userId);
 		if (user == null)
 			return null;
 		
-		List<ProductData> userProductData = userProductsTable.stream()
+		List<ProductData> productDataList = userProductsTable.stream()
 				.filter(up -> up.getUserId().equals(userId))
                 .map(up -> {
-                	Product product = 
-                			restTemplate.getForObject(
-                					"http://micro-product/products/" + up.getProductId(), Product.class);
-                	return new ProductData(product, up.getQuantity()); 
+                	return productDataService.getProductData(up); 
                 })
                 .collect(Collectors.toList());
 		
-		return new UserProductData(user, userProductData);
+		return new UserProductData(user, productDataList);
 	}
+	
+//	public UserProductData getFallbackUserProducts(@PathVariable("userId") Integer userId) {
+//		return new UserProductData(new User(0, "none", "none", "none"), 
+//				Arrays.asList(new ProductData(new Product(0, "none", "none"), 0)));
+//	}
 
 }
